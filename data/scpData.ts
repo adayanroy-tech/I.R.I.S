@@ -3023,7 +3023,7 @@ export const scpData: ScpEntry[] = [
   {
     id: "SCP-567",
     name: "La Mazmorra",
-    description: "Una mazmorra que se reconfigura constantemente y está llena de trampas y monstruos."
+    description: "Una mazmorra subterránea que se reconfigura constantemente y está llena de trampas y entidades hostiles generadas anómalamente."
   },
   {
     id: "SCP-568",
@@ -3189,5 +3189,15 @@ export const scpData: ScpEntry[] = [
     id: "SCP-600",
     name: "Ese Tío",
     description: "Un hombre que es percibido por todos como 'ese tipo', un conocido vago."
+  },
+  {
+    id: "SCP-2854",
+    name: "El Cuarto Hombre Original",
+    description: "Una anomalía conceptual y de alteración de la realidad que se manifiesta como la ausencia de Adolf Hitler en la historia. Se contiene mediante la supresión de información y la monitorización de paradojas históricas."
+  },
+  {
+    id: "SCP-4703",
+    name: "La Super Tienda Anómala",
+    description: "Un espacio extradimensional que se manifiesta como un supermercado. Los productos en sus estantes tienen propiedades anómalas e impredecibles."
   }
 ];

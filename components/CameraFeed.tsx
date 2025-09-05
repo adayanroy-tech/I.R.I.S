@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import type { CameraEvent } from '../types';
 import { PLACEHOLDER_IMAGES } from '../placeholderImages';
@@ -7,19 +8,46 @@ interface NotificationProps {
   event: CameraEvent;
   onExpire: () => void;
   onFocusMap: (cameraName: string) => void;
+  onOpenGlossary: (scpId: string) => void;
 }
 
-const EventMessage: React.FC<{ event: CameraEvent }> = ({ event }) => {
-  // Priority class is removed to keep all text the same color
+const MessageRenderer: React.FC<{ text: string; onOpenGlossary: (scpId: string) => void }> = ({ text, onOpenGlossary }) => {
+  const scpRegex = /(SCP-\d{3,4})/g;
+  const parts = text.split(scpRegex);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (scpRegex.test(part)) {
+          return (
+            <button
+              key={index}
+              onClick={() => onOpenGlossary(part)}
+              className="text-yellow-400 hover:underline focus:outline-none focus:bg-yellow-900/50"
+            >
+              {part}
+            </button>
+          );
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </>
+  );
+};
+
+
+const EventMessage: React.FC<{ event: CameraEvent; onOpenGlossary: (scpId: string) => void; }> = ({ event, onOpenGlossary }) => {
   return (
     <div className="animate-[fadeIn_0.5s_ease-in-out]">
       <span className="mr-3 text-cyan-400">{`[${event.timestamp}]`}</span>
-      <span className="text-green-300">{event.message}</span>
+      <span className="text-green-300">
+        <MessageRenderer text={event.message} onOpenGlossary={onOpenGlossary} />
+      </span>
     </div>
   );
 };
 
-export const CameraFeed: React.FC<NotificationProps> = ({ event, onExpire, onFocusMap }) => {
+export const CameraFeed: React.FC<NotificationProps> = ({ event, onExpire, onFocusMap, onOpenGlossary }) => {
   const [isFading, setIsFading] = useState(false);
   const locationInfo = CAMERA_LOCATIONS.find(loc => loc.name === event.camera);
 
@@ -68,7 +96,7 @@ export const CameraFeed: React.FC<NotificationProps> = ({ event, onExpire, onFoc
       )}
 
       <div className="text-lg">
-        <EventMessage event={event} />
+        <EventMessage event={event} onOpenGlossary={onOpenGlossary} />
       </div>
     </div>
   );

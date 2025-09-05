@@ -16,9 +16,9 @@ interface PersonnelStatus {
 
 // Define severity levels for status persistence
 const statusSeverity: { [key: string]: number } = {
-  'FALLECIDO / CRÍTICO': 5,
-  'EN PELIGRO': 4,
-  'DESAPARECIDO': 3,
+  'FALLECIDO': 6,
+  'EN PELIGRO': 5,
+  'DESAPARECIDO': 4,
   'HERIDO': 3,
   'CONDICIÓN ANÓMALA': 2,
   'NOMINAL': 1,
@@ -29,7 +29,7 @@ const getStatusInfoFromEvent = (event: CameraEvent): { status: string; color: st
   const msg = event.message.toLowerCase();
   
   if (msg.includes('fallecido') || msg.includes('cese de signos vitales') || msg.includes('k.i.a')) {
-    return { status: 'FALLECIDO / CRÍTICO', color: 'text-red-500 animate-pulse' };
+    return { status: 'FALLECIDO', color: 'text-red-500 animate-pulse font-black' };
   }
   if (msg.includes('herido') || msg.includes('incapacitado') || msg.includes('no responde')) {
     return { status: 'HERIDO', color: 'text-red-400' };
@@ -64,7 +64,28 @@ const inferPersonnelStatus = (name: string, history: CameraEvent[]): PersonnelSt
     };
   }
 
-  // Look at the last 10 events for this person for persistent status
+  // First, check for a terminal 'FALLECIDO' status anywhere in the history.
+  // This status is persistent and should override any subsequent events.
+  const deathEvent = history.find(event => {
+    const { status } = getStatusInfoFromEvent(event);
+    return status === 'FALLECIDO';
+  });
+
+  if (deathEvent) {
+    const { status, color } = getStatusInfoFromEvent(deathEvent);
+    return {
+      name,
+      status,
+      statusColor: color,
+      lastLocation: deathEvent.camera,
+      lastTimestamp: deathEvent.timestamp,
+      lastMessage: deathEvent.message,
+      isNotable,
+      type,
+    };
+  }
+
+  // If not deceased, then apply the "most severe of last 10" logic for transient states.
   const recentHistory = history.slice(-10);
   
   let mostSevereEvent = history[history.length - 1]; // Default to the latest event
@@ -115,7 +136,57 @@ const FilterButton: React.FC<{ label: string, isActive: boolean, onClick: () => 
 
 export const PersonnelTracker: React.FC<{ events: CameraEvent[]; onClose: () => void; }> = ({ events, onClose }) => {
   const [filter, setFilter] = useState<'ALL' | 'D-CLASS' | 'STAFF'>('ALL');
-  const [selectedDossier, setSelectedDossier] = useState<string | null>(null);
+  const [selectedDossier, setSelectedDossier] = useState<{name: string, description: string} | null>(null);
+
+  const generateDClassDossier = (name: string): string => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+        hash = hash & hash;
+    }
+
+    const seededRandom = (seed: number) => {
+        let s = Math.sin(seed) * 10000;
+        return s - Math.floor(s);
+    };
+    
+    const getRandomElement = <T,>(arr: T[], seed: number): T => {
+        return arr[Math.floor(seededRandom(seed) * arr.length)];
+    };
+
+    const origins = ["Corredor de la muerte", "Prisión de máxima seguridad", "Reclutamiento de población civil bajo el Protocolo 12", "Transferido desde el Sitio-[CENSURADO]", "Voluntario (ver anexo psiquiátrico)", "Capturado de un Grupo de Interés hostil"];
+    const crimeCategories = {
+        "Violentos": ["Múltiples homicidios", "Asesinato de personal de la Fundación", "Actos de terrorismo doméstico"],
+        "Anómalos": ["Creación/distribución de un agente memético ilegal", "Colaboración con el GdI 'La Mano de la Serpiente'", "Uso no autorizado de un artefacto anómalo"],
+        "Especiales": ["[CENSURADO] bajo el Protocolo de Seguridad 4000-Eshu", "Crímenes de guerra", "Traición contra un gobierno nacional"]
+    };
+    const psychTraits = [
+        "Muestra una alta tolerancia al dolor.", "Exhibe un comportamiento errático bajo estrés.",
+        "Tiene experiencia previa con fenómenos anómalos.", "Psicológicamente resistente a los efectos meméticos de Clase II.",
+        "Muestra una obediencia excepcional al personal de Nivel 3 o superior.", "Propenso a la violencia contra otro personal de Clase-D.",
+        "Niveles de empatía por debajo de la media.", "Sujeto muestra una notable aptitud para la improvisación.",
+        "Tendencias a la insubordinación si no está supervisado de cerca.", "Se desensibiliza rápidamente a los estímulos anómalos."
+    ];
+    const assignmentNotes = [
+        "Recomendado para pruebas de resistencia física.", "No recomendado para tareas que requieran concentración.",
+        "Apto para pruebas con cognitopeligros de bajo nivel.", "Considerado de alto riesgo de fuga. Requiere vigilancia adicional.",
+        "Apto para la observación directa de anomalías visuales.", "Recomendado para tareas con SCPs mecánicos o que requieran manipulación de dispositivos.",
+        "No asignar a tareas que requieran la destrucción de artefactos.", "Requiere supervisión constante debido a su comportamiento impredecible."
+    ];
+
+    const origin = getRandomElement(origins, hash);
+    const categoryKey = getRandomElement(Object.keys(crimeCategories), hash + 1) as keyof typeof crimeCategories;
+    const specificCrime = getRandomElement(crimeCategories[categoryKey], hash + 2);
+    const trait1 = getRandomElement(psychTraits, hash + 3);
+    let trait2 = getRandomElement(psychTraits, hash + 4);
+    // Ensure two different traits are selected
+    while (trait1 === trait2) {
+        trait2 = getRandomElement(psychTraits, hash + 4 + Math.random());
+    }
+    const note = getRandomElement(assignmentNotes, hash + 5);
+
+    return `DESIGNACIÓN: ${name}\n\nORIGEN DEL RECLUTAMIENTO: ${origin}\n\nREGISTRO CRIMINAL: ${specificCrime}\n\nEVALUACIÓN PSICOLÓGICA: ${trait1} ${trait2} Perfil general estable dentro de los parámetros esperados para el personal de Clase-D.\n\nNOTA DE ASIGNACIÓN: ${note}`;
+  };
 
   const personnelData = useMemo(() => {
     const personnelToEventsMap = new Map<string, CameraEvent[]>();
@@ -158,10 +229,18 @@ export const PersonnelTracker: React.FC<{ events: CameraEvent[]; onClose: () => 
   }, [personnelData, filter]);
 
   const handlePersonnelClick = (person: PersonnelStatus) => {
-    if(person.isNotable) {
-        setSelectedDossier(person.name);
+    if (person.isNotable) { // All Staff and D-11424 are notable
+        setSelectedDossier({
+            name: person.name,
+            description: NOTABLE_PERSONNEL[person.name as keyof typeof NOTABLE_PERSONNEL]
+        });
+    } else if (person.type === 'D-CLASS') { // Other D-Class
+        setSelectedDossier({
+            name: person.name,
+            description: generateDClassDossier(person.name)
+        });
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 animate-[fadeIn_0.3s_ease-out]">
@@ -196,13 +275,11 @@ export const PersonnelTracker: React.FC<{ events: CameraEvent[]; onClose: () => 
                 {filteredPersonnel.map((p) => (
                   <tr key={p.name} className="border-b border-green-900/50 hover:bg-green-900/20">
                     <td className={`p-2 align-top ${p.isNotable ? 'text-cyan-300 font-bold' : 'text-green-300'}`}>
-                      {p.isNotable ? (
-                        <button onClick={() => handlePersonnelClick(p)} className="hover:underline text-left w-full">
+                      <button onClick={() => handlePersonnelClick(p)} className="hover:underline text-left w-full">
                           {p.name}
-                        </button>
-                      ) : p.name }
+                      </button>
                       {p.type === 'D-CLASS' && <span className='text-orange-400 text-sm block'>(Clase-D)</span>}
-                      {p.isNotable && p.name !== 'D-11424' && <span className='text-cyan-400 text-sm block'>(Personal con Dossier)</span>}
+                      {p.isNotable && !p.name.startsWith('D-') && <span className='text-cyan-400 text-sm block'>(Personal con Dossier)</span>}
                     </td>
                     <td className={`p-2 align-top font-bold ${p.statusColor}`}>
                       {p.status}
@@ -218,10 +295,10 @@ export const PersonnelTracker: React.FC<{ events: CameraEvent[]; onClose: () => 
             </table>
           )}
         </div>
-        {selectedDossier && NOTABLE_PERSONNEL[selectedDossier as keyof typeof NOTABLE_PERSONNEL] && (
+        {selectedDossier && (
             <PersonnelDossier 
-                name={selectedDossier}
-                description={NOTABLE_PERSONNEL[selectedDossier as keyof typeof NOTABLE_PERSONNEL]}
+                name={selectedDossier.name}
+                description={selectedDossier.description}
                 onClose={() => setSelectedDossier(null)}
             />
         )}

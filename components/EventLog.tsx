@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import type { CameraEvent } from '../types';
 import { NOTABLE_PERSONNEL } from '../data/personnelData';
@@ -5,7 +6,35 @@ import { NOTABLE_PERSONNEL } from '../data/personnelData';
 interface EventLogProps {
   events: CameraEvent[];
   onClose: () => void;
+  onOpenGlossary: (scpId: string) => void;
 }
+
+const MessageRenderer: React.FC<{ text: string; onOpenGlossary: (scpId: string) => void }> = ({ text, onOpenGlossary }) => {
+  const scpRegex = /(SCP-\d{3,4}|SCP-001)/g;
+  const parts = text.split(scpRegex);
+
+  return (
+    <>
+      {parts.map((part, index) => {
+        if (scpRegex.test(part)) {
+          return (
+            <button
+              key={index}
+              onClick={(e) => {
+                  e.stopPropagation(); 
+                  onOpenGlossary(part);
+              }}
+              className="text-yellow-400 hover:underline focus:outline-none focus:bg-yellow-900/50 px-1 rounded-sm"
+            >
+              {part}
+            </button>
+          );
+        }
+        return <span key={index}>{part}</span>;
+      })}
+    </>
+  );
+};
 
 const FilterSection: React.FC<{ title: string; tags: string[]; activeTags: string[]; onTagClick: (tag: string) => void; }> = ({ title, tags, activeTags, onTagClick }) => {
   if (tags.length === 0) return null;
@@ -33,16 +62,30 @@ const FilterSection: React.FC<{ title: string; tags: string[]; activeTags: strin
 const EntityTag: React.FC<{
   tag: string;
   type: 'personnel' | 'anomalies';
-  onClick: (type: 'personnel' | 'anomalies', tag: string) => void;
-}> = ({ tag, type, onClick }) => {
+  onFilterClick: (type: 'personnel' | 'anomalies' | 'locations', tag: string) => void;
+  onGlossaryClick: (scpId: string) => void;
+}> = ({ tag, type, onFilterClick, onGlossaryClick }) => {
   const isPersonnel = type === 'personnel';
   const tagColorClass = isPersonnel
     ? 'border-cyan-500/50 text-cyan-300 hover:bg-cyan-900/50 hover:border-cyan-400'
     : 'border-yellow-500/50 text-yellow-300 hover:bg-yellow-900/50 hover:border-yellow-400';
 
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (e.ctrlKey || e.metaKey) { // Allow opening glossary with Ctrl/Cmd+Click
+      if (!isPersonnel) {
+        onGlossaryClick(tag);
+      }
+    } else {
+      onFilterClick(type, tag);
+    }
+  };
+
   return (
     <button
-      onClick={() => onClick(type, tag)}
+      onClick={handleClick}
+      onDoubleClick={() => !isPersonnel && onGlossaryClick(tag)}
+      title={isPersonnel ? `Filtrar por ${tag}` : `Filtrar por ${tag} (Doble clic o Ctrl+clic para abrir glosario)`}
       className={`px-2 py-0.5 text-sm rounded-sm cursor-pointer border transition-colors ${tagColorClass} mr-2 mb-1`}
     >
       {tag}
@@ -51,7 +94,7 @@ const EntityTag: React.FC<{
 };
 
 
-export const EventLog: React.FC<EventLogProps> = ({ events, onClose }) => {
+export const EventLog: React.FC<EventLogProps> = ({ events, onClose, onOpenGlossary }) => {
   const [activeFilters, setActiveFilters] = useState<{ personnel: string[]; anomalies: string[]; locations: string[] }>({
     personnel: [],
     anomalies: [],
@@ -81,7 +124,7 @@ export const EventLog: React.FC<EventLogProps> = ({ events, onClose }) => {
 
   const handleFilterClick = (type: 'personnel' | 'anomalies' | 'locations', tag: string) => {
     setActiveFilters(prev => {
-      const current = prev[type];
+      const current = prev[type as keyof typeof prev] as string[];
       const newFilters = current.includes(tag)
         ? current.filter(t => t !== tag)
         : [...current, tag];
@@ -150,11 +193,13 @@ export const EventLog: React.FC<EventLogProps> = ({ events, onClose }) => {
                     <tr key={index} className="border-b border-green-900/50 hover:bg-green-900/20">
                         <td className="p-2 align-top">{event.timestamp}</td>
                         <td className="p-2 align-top text-yellow-400">{event.camera}</td>
-                        <td className="p-2 align-top text-green-300">{event.message}</td>
+                        <td className="p-2 align-top text-green-300">
+                           <MessageRenderer text={event.message} onOpenGlossary={onOpenGlossary} />
+                        </td>
                         <td className="p-2 align-top">
                           <div className="flex flex-wrap">
-                            {event.personnel?.map(p => <EntityTag key={p} tag={p} type="personnel" onClick={handleFilterClick} />)}
-                            {event.anomalies?.map(a => <EntityTag key={a} tag={a} type="anomalies" onClick={handleFilterClick} />)}
+                            {event.personnel?.map(p => <EntityTag key={p} tag={p} type="personnel" onFilterClick={handleFilterClick} onGlossaryClick={onOpenGlossary} />)}
+                            {event.anomalies?.map(a => <EntityTag key={a} tag={a} type="anomalies" onFilterClick={handleFilterClick} onGlossaryClick={onOpenGlossary} />)}
                           </div>
                         </td>
                         <td className={`p-2 align-top text-center ${priorityClass}`}>{event.priority}</td>

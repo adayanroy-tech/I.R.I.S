@@ -69,9 +69,13 @@ export const initializeChat = (): Chat => {
   });
 };
 
-export const getNextEvents = async (chat: Chat): Promise<CameraEvent[]> => {
+export const getNextEvents = async (chat: Chat, userAction?: string | null): Promise<CameraEvent[]> => {
   try {
-    const response = await chat.sendMessage({ message: ADVANCE_TIME_PROMPT });
+    const prompt = userAction 
+      ? `USER ACTION: ${userAction}\n${ADVANCE_TIME_PROMPT}`
+      : ADVANCE_TIME_PROMPT;
+      
+    const response = await chat.sendMessage({ message: prompt });
     
     if (!response.text) {
         console.error("Gemini API returned an empty response text.");

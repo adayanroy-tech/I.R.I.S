@@ -9,6 +9,8 @@ interface SiteMapProps {
   chat: Chat | null;
   onClose: () => void;
   focusCamera?: string | null;
+  dispatchOrder: string | null;
+  onDispatch: (areaLabel: string) => void;
 }
 
 const getPriorityForArea = (cameras: string[], events: CameraEvent[]): 'HIGH' | 'MEDIUM' | 'LOW' | null => {
@@ -41,10 +43,15 @@ const NOMINAL_DESCRIPTIONS = {
     "Las pantallas de los terminales están apagadas, a excepción de una que muestra un diagrama de red parpadeante. El papeleo está cuidadosamente apilado en las bandejas de entrada. El silencio solo es roto por el clic ocasional de un relé del servidor.",
     "El proyector holográfico de la sala de reuniones proyecta un débil logotipo de la Fundación en el aire polvoriento. Las sillas están perfectamente alineadas alrededor de la mesa. No hay reuniones programadas.",
   ],
-  utility: [
+  technical: [
+    "El vaho se arremolina desde las cápsulas de criopreservación activas. Los monitores muestran temperaturas estables bajo cero. No se detecta movimiento.",
+    "Un brazo robótico calibra lentamente una serie de viales en el laboratorio de síntesis. El aire tiene un olor antiséptico agudo. Todas las alarmas de presión están en verde.",
+    "Las matrices de servidores del centro de telecomunicaciones parpadean con un ritmo constante. El zumbido de los ventiladores de refrigeración es el único sonido. El ancho de banda de la red es del 99,9%.",
+  ],
+  industrial: [
     "El zumbido constante de los transformadores de alto voltaje llena el aire. El calor residual de la maquinaria es palpable en la cámara. Los indicadores de salida de energía marcan un 99.8% de eficiencia.",
     "El vapor se escapa de una válvula de presión, un silbido apenas audible sobre el ruido de fondo. Las luces de advertencia de los generadores de respaldo están apagadas. Todo operativo.",
-    "Las tuberías gotean rítmicamente, formando un pequeño charco de agua destilada en el suelo de rejilla metálica. Los manómetros indican una presión estable en todo el sistema.",
+    "Los hornos del incinerador están inactivos, con sus puertas de acero selladas. Se detecta una temperatura residual de 50°C en el núcleo. El sistema de filtración de aire está en espera.",
   ],
   generic: [
     "El pasillo está desierto. Una luz de techo parpadea de forma intermitente, proyectando sombras danzantes. Se puede oír el crujido del metal mientras la instalación se asienta.",
@@ -61,17 +68,21 @@ const NOMINAL_DESCRIPTIONS = {
 };
 
 const getAreaCategory = (area: MapArea): keyof Omit<typeof NOMINAL_DESCRIPTIONS, 'special'> => {
-    const desc = (area.description + " " + area.label).toLowerCase();
-    const cameras = area.cameras.join(' ').toLowerCase();
+    const combinedText = (area.description + " " + area.label + " " + area.cameras.join(' ')).toLowerCase();
 
-    if (desc.includes('lab') || desc.includes('investigación') || desc.includes('materiales') || desc.includes('muestras')) return 'lab';
-    if (desc.includes('contención') || cameras.includes('scp-')) return 'containment';
-    if (desc.includes('barracones') || desc.includes('viviendas') || desc.includes('personal')) return 'personnel';
-    if (desc.includes('oficina') || desc.includes('director') || desc.includes('administrativo')) return 'office';
-    if (desc.includes('energía') || desc.includes('generadores') || desc.includes('incinerador') || desc.includes('almacén') || desc.includes('cryo') || desc.includes('telecommunications')) return 'utility';
-
+    // Specific categories first to avoid incorrect matching with broader terms like "personal"
+    if (combinedText.includes('cryo') || combinedText.includes('criogénica') || combinedText.includes('amnésicos') || combinedText.includes('telecomunicaciones') || combinedText.includes('mainframe')) return 'technical';
+    if (combinedText.includes('energía') || combinedText.includes('generadores') || combinedText.includes('incinerador') || combinedText.includes('almacén')) return 'industrial';
+    
+    // Then broader categories
+    if (combinedText.includes('lab') || combinedText.includes('investigación') || combinedText.includes('materiales') || combinedText.includes('muestras') || combinedText.includes('invernadero')) return 'lab';
+    if (combinedText.includes('contención') || combinedText.includes('containment') || combinedText.includes('scp-')) return 'containment';
+    if (combinedText.includes('barracones') || combinedText.includes('viviendas') || combinedText.includes('personal') || combinedText.includes('cafetería')) return 'personnel';
+    if (combinedText.includes('oficina') || combinedText.includes('director') || combinedText.includes('administrativo') || combinedText.includes('psicología')) return 'office';
+    
     return 'generic';
 };
+
 
 const seededRandom = (seed: number) => {
   let s = Math.sin(seed) * 10000;
@@ -250,8 +261,16 @@ const generateLocalAnalysis = (area: MapArea, allEvents: CameraEvent[]): React.R
 };
 
 
-const FocusPanel: React.FC<{ area: MapArea, events: CameraEvent[], onClose: () => void }> = ({ area, events, onClose }) => {
+const FocusPanel: React.FC<{ 
+  area: MapArea, 
+  events: CameraEvent[], 
+  onClose: () => void, 
+  dispatchOrder: string | null,
+  onDispatch: (areaLabel: string) => void,
+}> = ({ area, events, onClose, dispatchOrder, onDispatch }) => {
   const analysis = useMemo(() => generateLocalAnalysis(area, events), [area, events]);
+  const isDispatchPending = dispatchOrder === area.label;
+  const isAnotherDispatchPending = dispatchOrder !== null && !isDispatchPending;
 
   return (
     <div className="absolute top-0 right-0 h-full w-full max-w-md bg-black/90 border-l-2 border-green-700/80 p-4 flex flex-col sidebar sidebar-open animate-[slideIn_0.3s_ease-out] z-30">
@@ -260,11 +279,34 @@ const FocusPanel: React.FC<{ area: MapArea, events: CameraEvent[], onClose: () =
           <button onClick={onClose} className="text-2xl text-red-500 hover:text-red-400 transition-colors">[X]</button>
         </div>
         <div className="flex-grow overflow-y-auto pr-2 text-lg flex flex-col">
-            <p className="text-cyan-300 mb-4 italic flex-shrink-0">{area.description}</p>
-            <h4 className="text-xl text-green-400 border-b border-green-900 pb-1 mb-2 flex-shrink-0">ANÁLISIS EN TIEMPO REAL DE I.R.I.S.:</h4>
-            
-            <div className="bg-green-900/20 p-3 text-green-200 flex-grow">
-              {analysis}
+            <div className="flex-grow">
+              <p className="text-cyan-300 mb-4 italic flex-shrink-0">{area.description}</p>
+              <h4 className="text-xl text-green-400 border-b border-green-900 pb-1 mb-2 flex-shrink-0">ANÁLISIS EN TIEMPO REAL DE I.R.I.S.:</h4>
+              
+              <div className="bg-green-900/20 p-3 text-green-200">
+                {analysis}
+              </div>
+            </div>
+
+            <div className="mt-4 flex-shrink-0">
+              <button
+                  onClick={() => onDispatch(area.label)}
+                  disabled={isDispatchPending || isAnotherDispatchPending}
+                  className={`w-full text-lg p-2 border-2 transition-all duration-200 ${
+                      isDispatchPending
+                          ? 'bg-yellow-600 border-yellow-300 text-black cursor-not-allowed'
+                          : isAnotherDispatchPending
+                          ? 'bg-gray-700 border-gray-500 text-gray-400 cursor-not-allowed'
+                          : 'border-cyan-500 text-cyan-300 hover:bg-cyan-900/50'
+                  }`}
+              >
+                  {isDispatchPending
+                      ? 'INSPECCIÓN EN CURSO...'
+                      : isAnotherDispatchPending
+                      ? 'OTRO EQUIPO YA ENVIADO'
+                      : 'ENVIAR EQUIPO DE INSPECCIÓN'
+                  }
+              </button>
             </div>
         </div>
     </div>
@@ -272,7 +314,7 @@ const FocusPanel: React.FC<{ area: MapArea, events: CameraEvent[], onClose: () =
 }
 
 
-export const SiteMap: React.FC<SiteMapProps> = ({ events, chat, onClose, focusCamera }) => {
+export const SiteMap: React.FC<SiteMapProps> = ({ events, chat, onClose, focusCamera, dispatchOrder, onDispatch }) => {
   const [currentLevel, setCurrentLevel] = useState<number>(1);
   const [selectedArea, setSelectedArea] = useState<MapArea | null>(null);
 
@@ -370,7 +412,7 @@ export const SiteMap: React.FC<SiteMapProps> = ({ events, chat, onClose, focusCa
                         </div>
                     ))}
                 </div>
-                {selectedArea && <FocusPanel area={selectedArea} events={events} onClose={() => setSelectedArea(null)}/>}
+                {selectedArea && <FocusPanel area={selectedArea} events={events} onClose={() => setSelectedArea(null)} dispatchOrder={dispatchOrder} onDispatch={onDispatch} />}
             </div>
         </div>
       </div>

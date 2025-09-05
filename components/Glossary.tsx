@@ -1,23 +1,50 @@
-import React, { useState, useMemo } from 'react';
+
+import React, { useState, useMemo, useEffect } from 'react';
 import { scpData } from '../data/scpData';
 
 interface GlossaryProps {
   onClose: () => void;
+  initialSearchTerm?: string;
 }
 
-export const Glossary: React.FC<GlossaryProps> = ({ onClose }) => {
-  const [searchTerm, setSearchTerm] = useState('');
+export const Glossary: React.FC<GlossaryProps> = ({ onClose, initialSearchTerm = '' }) => {
+  const [searchTerm, setSearchTerm] = useState(initialSearchTerm);
+
+  useEffect(() => {
+    setSearchTerm(initialSearchTerm);
+  }, [initialSearchTerm]);
+
 
   const filteredScps = useMemo(() => {
-    if (!searchTerm) {
+    const lowercasedFilter = searchTerm.toLowerCase();
+    
+    if (!lowercasedFilter) {
       return scpData;
     }
-    const lowercasedFilter = searchTerm.toLowerCase();
-    return scpData.filter(scp =>
-      scp.id.toLowerCase().includes(lowercasedFilter) ||
-      scp.name.toLowerCase().includes(lowercasedFilter) ||
-      scp.description.toLowerCase().includes(lowercasedFilter)
-    );
+
+    return scpData
+      .filter(scp =>
+        scp.id.toLowerCase().includes(lowercasedFilter) ||
+        scp.name.toLowerCase().includes(lowercasedFilter) ||
+        scp.description.toLowerCase().includes(lowercasedFilter)
+      )
+      .sort((a, b) => {
+        const aId = a.id.toLowerCase();
+        const bId = b.id.toLowerCase();
+        
+        // Prioritize exact match
+        if (aId === lowercasedFilter) return -1;
+        if (bId === lowercasedFilter) return 1;
+
+        // Prioritize "starts with"
+        const aStartsWith = aId.startsWith(lowercasedFilter);
+        const bStartsWith = bId.startsWith(lowercasedFilter);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (!aStartsWith && bStartsWith) return 1;
+        
+        // Maintain original order for other matches
+        return 0;
+      });
   }, [searchTerm]);
 
   return (
@@ -43,7 +70,7 @@ export const Glossary: React.FC<GlossaryProps> = ({ onClose }) => {
         <div className="flex-grow overflow-y-auto pr-2" role="feed">
           {filteredScps.length > 0 ? (
             filteredScps.map(scp => (
-              <article key={scp.id} className="mb-4 pb-2 border-b border-green-900/50">
+              <article key={`${scp.id}-${scp.name}`} className="mb-4 pb-2 border-b border-green-900/50">
                 <h3 className="text-lg md:text-xl text-cyan-400">{scp.id} - {scp.name}</h3>
                 <p className="text-green-300 mt-1 text-base md:text-lg">{scp.description}</p>
               </article>

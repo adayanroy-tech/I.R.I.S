@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { Chat } from '@google/genai';
 import { CameraFeed } from './components/CameraFeed';
@@ -8,6 +9,7 @@ import { ScanningLoader } from './components/ScanningLoader';
 import { SiteMap } from './components/SiteMap';
 import { PersonnelTracker } from './components/PersonnelTracker';
 import { Glossary } from './components/Glossary';
+import { Terminal } from './components/Terminal';
 import { initializeChat, getNextEvents } from './services/geminiService';
 import type { CameraEvent } from './types';
 import { AMBIENT_SOUND, NEW_MESSAGE_SOUND, ALERT_SOUND, MENU_LOOP_SOUND } from './audioAssets';
@@ -31,9 +33,13 @@ const App: React.FC = () => {
   const [isMapVisible, setIsMapVisible] = useState<boolean>(false);
   const [isPersonnelTrackerVisible, setIsPersonnelTrackerVisible] = useState<boolean>(false);
   const [isGlossaryVisible, setIsGlossaryVisible] = useState<boolean>(false);
+  const [glossarySearchTerm, setGlossarySearchTerm] = useState<string>('');
+  const [isTerminalVisible, setIsTerminalVisible] = useState<boolean>(false);
   const [mapFocusTarget, setMapFocusTarget] = useState<string | null>(null);
   
   const [hasInteracted, setHasInteracted] = useState<boolean>(false);
+  const [dispatchOrder, setDispatchOrder] = useState<string | null>(null);
+  const [terminalAction, setTerminalAction] = useState<string | null>(null);
 
   // Sound Refs
   const menuLoopAudioRef = useRef<HTMLAudioElement>(null);
@@ -143,15 +149,31 @@ const App: React.FC = () => {
     setIsScanning(true);
     setError(null);
     try {
-      const newEvents = await getNextEvents(chat);
+      let userAction: string | null = null;
+      // A direct terminal command takes precedence over a map dispatch order
+      if (terminalAction) {
+        userAction = terminalAction;
+      } else if (dispatchOrder) {
+        userAction = `personnel.dispatch ${dispatchOrder}`;
+      }
+      
+      const newEvents = await getNextEvents(chat, userAction);
       processNewEvents(newEvents);
+      
+      // Reset actions after they've been processed
+      if(dispatchOrder) {
+        setDispatchOrder(null);
+      }
+      if(terminalAction) {
+        setTerminalAction(null);
+      }
     } catch (e) {
       console.error(e);
       setError('IRIS connection unstable. Failed to retrieve new events.');
     } finally {
       setIsScanning(false);
     }
-  }, [chat, hasInteracted]);
+  }, [chat, hasInteracted, dispatchOrder, terminalAction]);
 
   const handleExpireNotification = useCallback((id: number) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
@@ -160,6 +182,11 @@ const App: React.FC = () => {
   const handleFocusOnMap = (cameraName: string) => {
     setMapFocusTarget(cameraName);
     setIsMapVisible(true);
+  };
+
+  const handleOpenGlossaryWithSearch = (term: string) => {
+    setGlossarySearchTerm(term);
+    setIsGlossaryVisible(true);
   };
 
   if (preBoot) {
@@ -215,6 +242,7 @@ const App: React.FC = () => {
               event={event}
               onExpire={() => handleExpireNotification(event.id)}
               onFocusMap={handleFocusOnMap}
+              onOpenGlossary={handleOpenGlossaryWithSearch}
             />
           ))}
         </div>
@@ -238,15 +266,19 @@ const App: React.FC = () => {
             <p>SYSTEM ALERT: {error}</p>
           </div>
         )}
+         <div className="absolute bottom-1 left-2">
+            <button onClick={() => setIsTerminalVisible(true)} title="Open Command Terminal" className="text-lg px-1 text-green-800 hover:text-cyan-400 hover:bg-green-900/50 transition-colors opacity-75 hover:opacity-100">&gt;_</button>
+         </div>
          <div className="absolute bottom-1 right-2">
-            <button onClick={() => setIsGlossaryVisible(true)} className="text-sm text-green-600 hover:text-green-400 hover:underline">[ARCHIVOS DE BASE DE DATOS]</button>
+            <button onClick={() => handleOpenGlossaryWithSearch('')} className="text-sm text-green-600 hover:text-green-400 hover:underline">[ARCHIVOS DE BASE DE DATOS]</button>
         </div>
       </footer>
 
-      {isLogVisible && <EventLog events={allEvents} onClose={() => setIsLogVisible(false)} />}
-      {isMapVisible && <SiteMap events={allEvents} chat={chat} onClose={() => setIsMapVisible(false)} focusCamera={mapFocusTarget} />}
+      {isLogVisible && <EventLog events={allEvents} onClose={() => setIsLogVisible(false)} onOpenGlossary={handleOpenGlossaryWithSearch} />}
+      {isMapVisible && <SiteMap events={allEvents} chat={chat} onClose={() => setIsMapVisible(false)} focusCamera={mapFocusTarget} dispatchOrder={dispatchOrder} onDispatch={setDispatchOrder} />}
       {isPersonnelTrackerVisible && <PersonnelTracker events={allEvents} onClose={() => setIsPersonnelTrackerVisible(false)} />}
-      {isGlossaryVisible && <Glossary onClose={() => setIsGlossaryVisible(false)} />}
+      {isGlossaryVisible && <Glossary onClose={() => setIsGlossaryVisible(false)} initialSearchTerm={glossarySearchTerm} />}
+      {isTerminalVisible && <Terminal events={allEvents} onClose={() => setIsTerminalVisible(false)} onCommand={setTerminalAction} />}
     </div>
   );
 };

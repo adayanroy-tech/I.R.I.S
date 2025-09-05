@@ -254,6 +254,40 @@
         color: #ecfeff; /* cyan-50 */
         text-shadow: 0 0 5px #06b6d4;
       }
+
+      /* Terminal Styles */
+      .terminal-container {
+        font-family: 'VT323', monospace;
+      }
+      .terminal-output {
+        line-height: 1.4;
+      }
+      .terminal-input-line {
+        display: flex;
+      }
+      .terminal-input {
+        background: transparent;
+        border: none;
+        outline: none;
+        color: #a7f3d0; /* green-200 */
+        width: 100%;
+        flex-grow: 1;
+        font-family: 'VT323', monospace;
+        font-size: 1.25rem; /* Same as output */
+      }
+      .terminal-cursor {
+        width: 0.75rem;
+        height: 1.5rem;
+        background-color: #6ee7b7; /* green-300 */
+        animation: blink-cursor 1s infinite step-end;
+        display: inline-block;
+        vertical-align: middle;
+      }
+      @keyframes blink-cursor {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+      }
+
     </style>
   <script type="importmap">
 {

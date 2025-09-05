@@ -81,6 +81,7 @@ export const mapLayouts: MapLevel[] = [
             
             { id: 'l3-scp087', label: 'SCP-087', description: 'La Escalera.', cameras: findCameras(['Containment Area (SCP-087)']), x: 80, y: 22, w: 15, h: 10, type: 'room' },
             { id: 'l3-scp005', label: 'SCP-005', description: 'La Llave Esqueleto.', cameras: findCameras(['Containment Area (SCP-005)']), x: 5, y: 22, w: 15, h: 10, type: 'room' },
+            { id: 'l3-scp4703', label: 'Tienda 4703', description: "Área de acceso y monitorización para SCP-4703, 'La Super Tienda Anómala'.", cameras: findCameras(['Containment Area (SCP-4703)']), x: 22, y: 22, w: 16, h: 10, type: 'room' },
         ],
     },
     // LEVEL 4: HEAVY CONTAINMENT
@@ -97,7 +98,8 @@ export const mapLayouts: MapLevel[] = [
             { id: 'l4-alos-e', label: 'ALOS-E (SCP 201-300)', description: 'Ala de Contención Pesada.', cameras: findCameras([/Containment Area \(SCP-(2[0-9]{2}|300)\)/]), x: 5, y: 42, w: 45, h: 25, type: 'room' },
             { id: 'l4-alos-f', label: 'ALOS-F (SCP 301-400)', description: 'Ala de Contención Pesada.', cameras: findCameras([/Containment Area \(SCP-(3[0-9]{2}|400)\)/]), x: 5, y: 70, w: 45, h: 25, type: 'room' },
             { id: 'l4-alos-g', label: 'ALOS-G (SCP 401-500)', description: 'Ala de Contención Pesada.', cameras: findCameras([/Containment Area \(SCP-(4[0-9]{2}|500)\)/]), x: 52, y: 42, w: 43, h: 25, type: 'room' },
-            { id: 'l4-alos-h', label: 'ALOS-H (SCP 501-600)', description: 'Ala de Contención Pesada.', cameras: findCameras([/Containment Area \(SCP-(5[0-9]{2}|600)\)/]), x: 52, y: 70, w: 43, h: 25, type: 'room' },
+            { id: 'l4-alos-h', label: 'ALOS-H (SCP 501-600)', description: 'Ala de Contención Pesada.', cameras: findCameras([/Containment Area \(SCP-(5[0-9]{2}|600)\)/]), x: 52, y: 70, w: 43, h: 12, type: 'room' },
+            { id: 'l4-scp567', label: 'Acceso Mazmorra 567', description: 'Punto de acceso y cuarentena para la anomalía espacial SCP-567, "La Mazmorra".', cameras: findCameras(['Containment Area (SCP-567)']), x: 52, y: 84, w: 43, h: 11, type: 'room' },
         ],
     },
     // LEVEL 5: DEEP STORAGE & ESOTERICA
@@ -115,7 +117,8 @@ export const mapLayouts: MapLevel[] = [
             { id: 'l5-cryo', label: 'Bahía Criogénica', description: 'Instalaciones de criopreservación para anomalías y personal.', cameras: findCameras(["Cryogenics Bay"]), x: 57, y: 58, w: 34, h: 10, type: 'room' },
             { id: 'l5-incinerator', label: 'Acceso al Incinerador', description: 'Corredor de acceso a los incineradores de alta temperatura del sitio.', cameras: findCameras(["Incinerator Access Corridor"]), x: 57, y: 71, w: 34, h: 20, type: 'room' },
             
-            { id: 'l5-redacted', label: 'SECTOR [CENSURADO]', description: 'La información sobre este sector está restringida al Nivel de Autorización 5.', cameras: findCameras(["Sector [REDACTED]", "Containment Area (SCP-579)"]), x: 5, y: 78, w: 43, h: 17, type: 'room' },
+            { id: 'l5-scp2854', label: 'Celda 2854', description: 'Celda de Contención Conceptual para SCP-2854, "El Cuarto Hombre Original".', cameras: findCameras(['Containment Area (SCP-2854)']), x: 5, y: 78, w: 43, h: 8, type: 'room' },
+            { id: 'l5-redacted', label: 'SECTOR [CENSURADO]', description: 'La información sobre este sector está restringida al Nivel de Autorización 5.', cameras: findCameras(["Sector [REDACTED]", "Containment Area (SCP-579)"]), x: 5, y: 87, w: 43, h: 8, type: 'room' },
         ],
     },
 ];
