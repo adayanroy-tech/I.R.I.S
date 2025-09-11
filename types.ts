@@ -11,11 +11,31 @@ export interface CameraEvent {
   imageId?: number;
 }
 
+export interface CommsMessage {
+  id: string; // A unique ID for the message
+  sender: string; // Name of the person sending the message
+  recipient: string; // Should always be "Supervisor" for incoming
+  timestamp: string;
+  message: string;
+}
+
 export interface GeminiResponse {
   events: CameraEvent[];
+  messages?: CommsMessage[];
 }
 
 export type CameraLocation = {
   name: string;
   description: string;
 };
+
+export interface ProtocolEntry {
+  id: string;
+  title: string;
+  content: string;
+}
+
+export interface ProtocolCategory {
+  category: string;
+  protocols: ProtocolEntry[];
+}

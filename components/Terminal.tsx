@@ -39,17 +39,16 @@ const HelpMessage: React.FC = () => (
         <p><span className='text-yellow-400'>personnel.list</span> - Lista todo el personal conocido.</p>
         <p><span className='text-yellow-400'>personnel.query "nombre completo"</span> - Muestra el dossier de un miembro del personal. Ej: personnel.query "Dr. Aris Thorne"</p>
         <p><span className='text-yellow-400'>personnel.locate "nombre completo"</span> - Muestra la última ubicación conocida de un miembro del personal.</p>
-        <p><span className='text-yellow-400'>personnel.psych_eval "nombre completo"</span> - [SIMULACIÓN] Ordena una evaluación psicológica. Esta acción tiene consecuencias narrativas.</p>
-        <p><span className='text-yellow-400'>personnel.terminate "nombre" pd. "razón"</span></p>
-        <p className='pl-4'>[SIMULACIÓN] Solicita la terminación de un individuo. Rara vez se aprueba. Ej: personnel.terminate "D-11205" pd. "Insubordinación"</p>
-        <p><span className='text-yellow-400'>personnel.relocate "nombre" to "ubicación"</span></p>
-        <p className='pl-4'>[SIMULACIÓN] Reasigna al personal a una zona de alto riesgo. Ej: personnel.relocate "Agente Carter" to "Containment Area (SCP-106)"</p>
-        <p><span className='text-yellow-400'>experiment.approve "investigador"</span> - [SIMULACIÓN] Aprueba la última propuesta de experimento de un investigador.</p>
-        <p><span className='text-yellow-400'>experiment.deny "investigador" [pd. "nota"]</span></p>
+        <p><span className='text-yellow-400'>personnel.psych_eval "nombre completo" [--silent]</span> - [SIMULACIÓN] Ordena una evaluación psicológica. Esta acción tiene consecuencias narrativas.</p>
+        <p><span className='text-yellow-400'>personnel.relocate "nombre" to "ubicación" [--silent]</span></p>
+        <p className='pl-4'>[SIMULACIÓN] Reasigna al personal. Ciertas ubicaciones pueden tener consecuencias... imprevistas.</p>
+        <p><span className='text-yellow-400'>personnel.terminate "nombre" pd. "razón" [--silent]</span> - [SIMULACIÓN] Solicita la terminación de personal. REQUIERE AUTORIZACIÓN DEL COMITÉ DE ÉTICA.</p>
+        <p><span className='text-yellow-400'>experiment.approve "investigador" [--silent]</span> - [SIMULACIÓN] Aprueba la última propuesta de experimento de un investigador.</p>
+        <p><span className='text-yellow-400'>experiment.deny "investigador" [pd. "nota"] [--silent]</span></p>
         <p className='pl-4'>[SIMULACIÓN] Deniega la última propuesta de experimento. La postdata opcional permite dar una razón.</p>
-        <p><span className='text-yellow-400'>experiment.begin "scp" "investigador" "clase_d" [pd. "nota"]</span></p>
+        <p><span className='text-yellow-400'>experiment.begin "scp" "investigador" "clase_d" [pd. "nota"] [--silent]</span></p>
         <p className='pl-4'>[SIMULACIÓN] Ordena el inicio de un experimento. La postdata (pd.) opcional permite dar instrucciones específicas.</p>
-        <p><span className='text-yellow-400'>resource.send "item" "investigador" [pd. "nota"]</span></p>
+        <p><span className='text-yellow-400'>resource.send "item" "investigador" [pd. "nota"] [--silent]</span></p>
         <p className='pl-4'>[SIMULACIÓN] Envía un recurso. Los ítems con propiedades anómalas tendrán consecuencias. Ej: resource.send "SCP-500" "Dr. Petrova" pd. "Para tus pruebas."</p>
 
         <p className='text-cyan-400 mt-2'>-- Anomalías y Contención --</p>
@@ -59,7 +58,13 @@ const HelpMessage: React.FC = () => (
         <p className='pl-6'><span className='text-yellow-400'>--status &lt;alert|observation&gt;</span>: Filtra SCPs activos por estado.</p>
         <p><span className='text-yellow-400'>scp.query &lt;designación&gt;</span> - Muestra la entrada de la base de datos para un SCP (ej: scp.query SCP-173).</p>
         <p><span className='text-yellow-400'>containment.status "cámara"</span> - Muestra el estado de contención de una cámara/celda específica.</p>
-        <p><span className='text-yellow-400'>containment.lockdown "celda/sector"</span> - [SIMULACIÓN] Inicia un protocolo de bloqueo de emergencia.</p>
+        
+        <p className='text-cyan-400 mt-2'>-- Protocolos de Emergencia --</p>
+        <p><span className='text-yellow-400'>security.lockdown &lt;objetivo&gt; [--silent]</span> - [SIMULACIÓN] Inicia un bloqueo de seguridad total del objetivo (ej: "Sector-C", "Nivel-4", "Site-19").</p>
+        <p><span className='text-yellow-400'>security.quarantine &lt;objetivo&gt; [--silent]</span> - [SIMULACIÓN] Sella un área, activa los filtros de aire y despliega equipos NBQ.</p>
+        <p><span className='text-yellow-400'>site.evacuate &lt;objetivo&gt; [--silent]</span> - [SIMULACIÓN] Inicia la evacuación de personal no esencial de un área.</p>
+        <p><span className='text-yellow-400'>site.flood &lt;objetivo&gt; [with "sustancia"] [--silent]</span> - [SIMULACIÓN] Inunda un área. Sustancia por defecto: "espuma ignífuga".</p>
+        <p><span className='text-yellow-400'>site.purge_atmosphere &lt;objetivo&gt; [--silent]</span> - [SIMULACIÓN] Venta la atmósfera de un sector. Medida extrema.</p>
 
         <p className='text-cyan-400 mt-2'>-- Operaciones del Sitio --</p>
         <p><span className='text-yellow-400'>log.search "palabra clave"</span> - Busca una palabra clave en el registro de eventos.</p>
@@ -87,8 +92,16 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
   }, [output]);
 
   const processCommand = useCallback((commandStr: string) => {
+    const commandForGemini = commandStr;
     const newOutput: React.ReactNode[] = [];
     let isConsequential = false;
+    let isSilent = false;
+
+    // Check for --silent flag first
+    if (commandStr.trim().endsWith('--silent')) {
+        isSilent = true;
+        commandStr = commandStr.replace('--silent', '').trim();
+    }
 
     // Standard arg parsing for most commands
     const args = commandStr.trim().match(/(?:[^\s"]+|"[^"]*")+/g)?.map(arg => arg.replace(/"/g, '')) || [''];
@@ -124,7 +137,6 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
             if (args.length === 0) {
                 newOutput.push(<span className='text-red-500'>ERROR: Se requiere un nombre. Uso: personnel.query "nombre completo"</span>);
             } else {
-                isConsequential = true;
                 const name = args.join(' ');
                 const dossier = NOTABLE_PERSONNEL[name as keyof typeof NOTABLE_PERSONNEL];
                 if (dossier) {
@@ -140,7 +152,6 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
             if (args.length === 0) {
                  newOutput.push(<span className='text-red-500'>ERROR: Se requiere un nombre. Uso: personnel.locate "nombre completo"</span>);
             } else {
-                isConsequential = true;
                 const name = args.join(' ');
                 const personEvents = events.filter(e => e.personnel?.includes(name));
                 if (personEvents.length > 0) {
@@ -159,8 +170,12 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
             } else {
                 isConsequential = true;
                 const name = args.join(' ');
-                newOutput.push(<span className="text-yellow-400">Procesando orden de evaluación psicológica para: {name}...</span>);
-                newOutput.push(`El personal ha sido notificado. El acceso ha sido restringido temporalmente pendiente de evaluación.`);
+                if (isSilent) {
+                    newOutput.push(<span className="text-gray-500">[ACCIÓN SECRETA] Se ha marcado discretamente a {name} para una futura evaluación psicológica no programada.</span>);
+                } else {
+                    newOutput.push(<span className="text-yellow-400">Procesando orden de evaluación psicológica para: {name}...</span>);
+                    newOutput.push(`El personal ha sido notificado. El acceso ha sido restringido temporalmente pendiente de evaluación.`);
+                }
             }
             break;
 
@@ -173,27 +188,43 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
                 isConsequential = true;
                 const name = commandStr.substring(command.length, pdIndex).trim().replace(/[<>]/g, '').replace(/^"|"$/g, '');
                 const reason = commandStr.substring(pdIndex + ' pd. '.length).trim().replace(/^"|"$/g, '');
-                newOutput.push(<span className="text-yellow-400">[SIMULACIÓN] Solicitud de terminación registrada.</span>);
-                newOutput.push(`  - Objetivo: ${name}`);
-                newOutput.push(`  - Razón proporcionada: "${reason}"`);
-                newOutput.push("La solicitud ha sido enviada al Comité de Ética para su revisión. Esta acción ha sido registrada.");
+                 if (isSilent) {
+                    newOutput.push(<span className="text-gray-500">[ACCIÓN SECRETA] Se ha enviado una solicitud de terminación anónima al Comité de Ética.</span>);
+                    newOutput.push(`  - Objetivo: ${name}`);
+                } else {
+                    newOutput.push(<span className="text-yellow-400">[SIMULACIÓN] Solicitud de terminación registrada.</span>);
+                    newOutput.push(`  - Objetivo: ${name}`);
+                    newOutput.push(`  - Razón proporcionada: "${reason}"`);
+                    newOutput.push("La solicitud ha sido enviada al Comité de Ética para su revisión. Esta acción ha sido registrada.");
+                }
             }
             break;
         }
 
         case 'personnel.relocate': {
-            const lowerCmdStr = commandStr.toLowerCase();
-            const toIndex = lowerCmdStr.indexOf(' to ');
-            if (toIndex === -1 || toIndex === lowerCmdStr.length - 4) { // ' to ' is 4 chars
-                 newOutput.push(<span className='text-red-500'>ERROR: Uso incorrecto. Uso: personnel.relocate "nombre" to "ubicación"</span>);
+            const toIndex = args.findIndex(arg => arg.toLowerCase() === 'to');
+
+            if (toIndex === -1 || toIndex === 0 || toIndex === args.length - 1) {
+                newOutput.push(<span className='text-red-500'>ERROR: Uso incorrecto. Uso: personnel.relocate "nombre" to "ubicación"</span>);
+                break;
+            }
+
+            const name = args.slice(0, toIndex).join(' ');
+            const location = args.slice(toIndex + 1).join(' ');
+
+            if (!name || !location) {
+                newOutput.push(<span className='text-red-500'>ERROR: Falta el nombre o la ubicación.</span>);
+                break;
+            }
+            
+            isConsequential = true;
+            if (isSilent) {
+                newOutput.push(<span className="text-gray-500">[ACCIÓN SECRETA] Modificando discretamente el manifiesto de personal...</span>);
+                newOutput.push(`La nueva asignación para ${name} se reflejará como una actualización de rutina.`);
             } else {
-                isConsequential = true;
-                const name = commandStr.substring(command.length, toIndex).trim().replace(/[<>]/g, '').replace(/^"|"$/g, '');
-                const location = commandStr.substring(toIndex + ' to '.length).trim().replace(/[<>]/g, '').replace(/^"|"$/g, '');
                 newOutput.push(<span className="text-cyan-400">[SIMULACIÓN] Orden de reasignación de personal registrada.</span>);
                 newOutput.push(`  - Objetivo: ${name}`);
                 newOutput.push(`  - Nuevo destino: ${location}`);
-                newOutput.push(`  - Pretexto: Calibración de sensores de rutina.`);
                 newOutput.push("La orden de traslado se procesará en el próximo ciclo operativo.");
             }
             break;
@@ -359,7 +390,6 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
             if (args.length === 0) {
                 newOutput.push(<span className='text-red-500'>ERROR: Se requiere una designación. Uso: scp.query &lt;designación&gt;</span>);
             } else {
-                isConsequential = true;
                 const originalQuery = args[0];
                 let query = originalQuery;
 
@@ -409,25 +439,90 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
             }
             break;
 
-        case 'containment.lockdown':
+        case 'security.lockdown':
             if (args.length === 0) {
-                newOutput.push(<span className='text-red-500'>ERROR: Se requiere una celda o sector.</span>);
+                newOutput.push(<span className='text-red-500'>ERROR: Se requiere un objetivo. Uso: security.lockdown &lt;objetivo&gt;</span>);
             } else {
                 isConsequential = true;
                 const target = args.join(' ');
-                newOutput.push(<span className="text-yellow-400">Iniciando protocolo de bloqueo para: {target}...</span>);
-                newOutput.push("Cerrando puertas de titanio...");
-                newOutput.push("Activando contramedidas meméticas de emergencia...");
-                newOutput.push("Desplegando equipos de respuesta rápida a la ubicación...");
-                newOutput.push(<span className="text-cyan-400">BLOQUEO COMPLETADO. El área ahora está asegurada.</span>);
+                newOutput.push(<span className="text-yellow-400">INICIANDO PROTOCOLO DE BLOQUEO DE SEGURIDAD PARA: {target.toUpperCase()}...</span>);
+                newOutput.push("Cerrando mamparos de titanio...");
+                newOutput.push("Redirigiendo energía a los sistemas defensivos...");
+                newOutput.push("Autorizando el uso de fuerza letal para las FDM en el área.");
+                newOutput.push(<span className="text-cyan-400">BLOQUEO DE SEGURIDAD ACTIVADO.</span>);
+            }
+            break;
+        
+        case 'security.quarantine':
+            if (args.length === 0) {
+                newOutput.push(<span className='text-red-500'>ERROR: Se requiere un objetivo. Uso: security.quarantine &lt;objetivo&gt;</span>);
+            } else {
+                isConsequential = true;
+                const target = args.join(' ');
+                newOutput.push(<span className="text-yellow-400">INICIANDO PROTOCOLO DE CUARENTENA BIOLÓGICA/MEMÉTICA PARA: {target.toUpperCase()}...</span>);
+                newOutput.push("Sellando sistemas de ventilación y HVAC...");
+                newOutput.push("Activando depuradores de aire de ciclo cerrado y filtros HEPA anómalos...");
+                newOutput.push("Desplegando equipos de respuesta NBQ al perímetro.");
+                newOutput.push(<span className="text-cyan-400">CUARENTENA ESTABLECIDA. Zona aislada.</span>);
             }
             break;
 
+        case 'site.evacuate':
+            if (args.length === 0) {
+                newOutput.push(<span className='text-red-500'>ERROR: Se requiere un objetivo. Uso: site.evacuate &lt;objetivo&gt;</span>);
+            } else {
+                isConsequential = true;
+                const target = args.join(' ');
+                newOutput.push(<span className="text-yellow-400">INICIANDO PROTOCOLO DE EVACUACIÓN PARA PERSONAL NO ESENCIAL EN: {target.toUpperCase()}...</span>);
+                newOutput.push("Activando alarmas de evacuación y luces estroboscópicas.");
+                newOutput.push("Transmitiendo rutas de escape seguras a los transpondedores del personal.");
+                newOutput.push("Las FDM están asegurando los puntos de reunión designados.");
+                newOutput.push(<span className="text-cyan-400">EVACUACIÓN EN CURSO.</span>);
+            }
+            break;
+        
+        case 'site.flood': {
+            const withIndex = args.findIndex(arg => arg.toLowerCase() === 'with');
+            let targetArgs = [...args];
+            let substance = "espuma ignífuga";
+
+            if (withIndex !== -1) {
+                substance = args.slice(withIndex + 1).join(' ');
+                targetArgs = args.slice(0, withIndex);
+            }
+
+            if (targetArgs.length === 0) {
+                newOutput.push(<span className='text-red-500'>ERROR: Se requiere un objetivo. Uso: site.flood &lt;objetivo&gt; [with "sustancia"]</span>);
+            } else {
+                isConsequential = true;
+                const target = targetArgs.join(' ');
+                newOutput.push(<span className="text-red-500">ADVERTENCIA: Iniciando protocolo de inundación de área. Esta acción es irreversible.</span>);
+                newOutput.push(`Sellando todas las salidas del área ${target.toUpperCase()}.`);
+                newOutput.push(`Inundando ${target.toUpperCase()} con ${substance}...`);
+                newOutput.push(`Activando boquillas de dispersión...`);
+                newOutput.push(<span className="text-cyan-400">PROTOCOLO DE INUNDACIÓN COMPLETADO.</span>);
+            }
+            break;
+        }
+
+        case 'site.purge_atmosphere':
+            if (args.length === 0) {
+                newOutput.push(<span className='text-red-500'>ERROR: Se requiere un objetivo. Uso: site.purge_atmosphere &lt;objetivo&gt;</span>);
+            } else {
+                isConsequential = true;
+                const target = args.join(' ');
+                newOutput.push(<span className="text-red-500">ADVERTENCIA: Iniciando purga atmosférica para {target.toUpperCase()}. Todo el personal no protegido será eliminado.</span>);
+                newOutput.push("Abriendo compuertas de ventilación externas...");
+                newOutput.push(`Presión atmosférica en ${target.toUpperCase()} cayendo a 0 kPa...`);
+                newOutput.push("Ciclo de purga completado. Re-presurizando con atmósfera estéril.");
+                newOutput.push(<span className="text-cyan-400">PURGA ATMOSFÉRICA COMPLETADA.</span>);
+            }
+            break;
+            
         case 'log.search':
              if (args.length === 0) {
                 newOutput.push(<span className='text-red-500'>ERROR: Se requiere una palabra clave.</span>);
             } else {
-                isConsequential = true;
                 const keyword = args.join(' ').toLowerCase();
                 const matches = events.filter(e => e.message.toLowerCase().includes(keyword));
                 if (matches.length > 0) {
@@ -446,7 +541,6 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
              if (args.length === 0) {
                 newOutput.push(<span className='text-red-500'>ERROR: Se requiere un nombre de cámara.</span>);
             } else {
-                isConsequential = true;
                 const camera = args.join(' ');
                 const matches = events.filter(e => e.camera.toLowerCase().includes(camera.toLowerCase()));
                 if (matches.length > 0) {
@@ -455,35 +549,41 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
                         newOutput.push(`[${e.timestamp}] (${e.camera}): ${e.message}`);
                     });
                 } else {
-                    newOutput.push(`No hay eventos registrados para cámaras que coincidan con "${camera}".`);
+                    newOutput.push(`No hay eventos registrados para cámaras que coinciden con "${camera}".`);
                 }
             }
             break;
 
         default:
-            newOutput.push(<span className='text-red-500'>Comando desconocido: '{command}'. Escriba 'help' para obtener ayuda.</span>);
+            if(commandStr.trim()) {
+                newOutput.push(<span className='text-red-500'>Comando desconocido: '{command}'. Escriba 'help' para obtener ayuda.</span>);
+            }
             break;
     }
     
     if (isConsequential) {
-      onCommand(commandStr);
-      newOutput.push(<span key="consequence-info" className="text-gray-500 italic mt-2 block">COMANDO REGISTRADO. LAS CONSECUENCIAS SE REFLEJARÁN EN EL PRÓXIMO CICLO DE EVENTOS.</span>);
+      onCommand(commandForGemini);
+      const feedbackMessage = isSilent 
+        ? <span key="consequence-info" className="text-gray-500 italic mt-2 block">ACCIÓN SECRETA REGISTRADA. LA DIRECTIVA SE PROCESARÁ DISCRETAMENTE.</span>
+        : <span key="consequence-info" className="text-gray-500 italic mt-2 block">COMANDO REGISTRADO. LAS CONSECUENCIAS SE REFLEJARÁN EN EL PRÓXIMO CICLO DE EVENTOS.</span>;
+      newOutput.push(feedbackMessage);
     }
     
     setOutput(prev => [
         ...prev,
-        <p key={`cmd-${Date.now()}`}><span className="text-cyan-400">IRIS:&gt;</span> {commandStr}</p>,
+        <p key={`cmd-${Date.now()}`}><span className="text-cyan-400">IRIS:&gt;</span> {commandForGemini}</p>,
         ...newOutput.map((line, i) => {
             const key = `${Date.now()}-${i}`;
             if (typeof line === 'string') {
-                return <div key={key} dangerouslySetInnerHTML={{ __html: line }} />;
+                // This is a simple way to allow basic HTML in responses, like spans for color
+                return <div key={key} dangerouslySetInnerHTML={{ __html: line.replace(/<script.*?>.*?<\/script>/gi, '') }} />;
             }
             return <div key={key}>{line}</div>;
         })
     ]);
 
-    if (command && commandStr.trim()) {
-      setHistory(prev => [commandStr, ...prev]);
+    if (command && commandForGemini.trim()) {
+      setHistory(prev => [commandForGemini, ...prev]);
     }
     setHistoryIndex(-1);
     setInput('');
@@ -493,9 +593,7 @@ export const Terminal: React.FC<TerminalProps> = ({ onClose, events, onCommand }
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      if(input.trim()){
-        processCommand(input);
-      }
+      processCommand(input);
     } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         if(history.length > 0 && historyIndex < history.length -1) {

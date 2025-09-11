@@ -287,6 +287,99 @@
         0%, 100% { opacity: 1; }
         50% { opacity: 0; }
       }
+      
+      /* Protocol Icon Button on Main Screen */
+      .protocol-icon-button {
+        position: absolute;
+        bottom: 1rem;
+        left: 1rem;
+        z-index: 30;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        cursor: pointer;
+        color: #a7f3d0; /* green-200 */
+        opacity: 0.7;
+        transition: all 0.2s ease-in-out;
+      }
+      .protocol-icon-button:hover {
+        opacity: 1;
+        color: #6ee7b7; /* green-300 */
+        text-shadow: 0 0 8px rgba(110, 231, 183, 0.7);
+      }
+      .protocol-icon-button svg {
+        width: 4rem; /* 64px */
+        height: 4rem; /* 64px */
+      }
+      .protocol-icon-button span {
+        font-size: 1rem;
+        margin-top: 0.25rem;
+      }
+
+      /* New Protocol Viewer Styles */
+      .protocol-nav-tree { }
+      .protocol-category {
+        margin-bottom: 0.5rem;
+        color: #67e8f9; /* cyan-300 */
+        font-size: 1.125rem; /* text-lg */
+      }
+      .protocol-file-item {
+        display: flex;
+        align-items: center;
+        width: 100%;
+        text-align: left;
+        padding: 0.25rem 0.5rem;
+        font-size: 1rem;
+        color: #a7f3d0; /* green-200 */
+        transition: background-color 0.2s ease-in-out;
+      }
+      .protocol-file-item:hover {
+        background-color: rgba(16, 185, 129, 0.2);
+      }
+      .protocol-file-active {
+        background-color: #059669; /* green-600 */
+        color: #000;
+      }
+      .terminal-cursor-inline {
+        width: 0.5rem;
+        height: 1.25rem;
+        background-color: #000;
+        animation: blink-cursor 1s infinite step-end;
+        display: inline-block;
+        vertical-align: middle;
+        margin-left: 0.5rem;
+      }
+      .protocol-content-viewer {
+        display: flex;
+        flex-direction: column;
+        background-color: rgba(0, 20, 10, 0.5);
+        border: 1px solid #047857; /* green-700 */
+      }
+      .protocol-content-header {
+        padding: 0.5rem;
+        background-color: #064e3b; /* green-800 */
+        color: #a7f3d0; /* green-200 */
+        border-bottom: 1px solid #047857;
+        font-family: 'VT323', monospace;
+      }
+      .protocol-content-body {
+        padding: 0.5rem;
+        flex-grow: 1;
+        overflow-y: auto;
+      }
+      .line-number {
+        color: #047857; /* green-700 */
+        padding-right: 1rem;
+        user-select: none;
+        text-align: right;
+        min-width: 3rem;
+      }
+      .line-content {
+        color: #a7f3d0; /* green-200 */
+        white-space: pre-wrap;
+        word-break: break-word;
+        font-family: 'VT323', monospace;
+      }
 
     </style>
   <script type="importmap">

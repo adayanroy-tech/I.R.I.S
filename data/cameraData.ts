@@ -26,6 +26,9 @@ const SITE_OPERATIONS_CAMERAS: CameraLocation[] = [
   { name: "Hallway 7, Sector-B", description: "Un pasillo notablemente silencioso cerca de áreas de contención de alto riesgo." },
   { name: "Sector [REDACTED]", description: "Información sobre la ubicación y el propósito de este sector clasificada por orden del O5." },
   { name: "Sub-Level 7: Thaumiel Object Storage", description: "Almacén de alta seguridad para anomalías de clase Thaumiel." },
+  { name: "REMOTE-SITE-64: Aqueous Containment", description: "Remote monitoring feed for Site-64, specialized in aquatic anomalies." },
+  { name: "FIELD-POST-DELTA: SCP-XXX Observation", description: "Temporary observation post monitoring an immobile anomaly in situ." },
+  { name: "Off-Site Geological Survey Point Gamma", description: "Seismic and subterranean resonance sensors deployed in [REDACTED]." },
 ];
 
 // Generate a camera location for every single SCP in the database for maximum diversity.

@@ -32,7 +32,10 @@ export const NOTABLE_PERSONNEL: Record<string, string> = {
   "Anya Sharma": "Guardia de seguridad. Una profesional sólida y fiable, a menudo asignada a puestos de alta seguridad. Su nombre idéntico al del enlace del Comité de Ética causa frecuentes confusiones burocráticas.",
   
   // --- SUJETOS DE PRUEBA NOTABLES ---
-  "D-11424": "Un sujeto de pruebas de Clase-D con una tasa de supervivencia inusualmente alta. No es un simple superviviente; está activamente planeando su fuga. Intenta crear distracciones, robar tarjetas de acceso y memorizar las rutas de los guardias. Su pánico a menudo frustra sus propios planes."
+  "D-11424": "El Oportunista. Un sujeto de pruebas con una tasa de supervivencia anómala. Cada crisis es una oportunidad potencial para él. Debe ser observado estudiando las respuestas de seguridad durante los bloqueos, intentando robar objetos pequeños durante experimentos caóticos o tratando de manipular a Clase-D menos inteligentes.",
+  "D-11283": "El Veterano Cínico. Desensibilizado y fatalista. Sigue las órdenes con un mínimo de alboroto para sobrevivir, a menudo con comentarios secos y sarcásticos en voz baja. Puede sabotear sutilmente experimentos que considera inútiles o excesivamente peligrosos, no por malicia, sino por pragmatismo.",
+  "D-11301": "El Creyente Ferviente. Propenso a la superstición. Interpreta los eventos anómalos a través de una lente cuasi-religiosa o conspirativa. Puede intentar rezar, negociar o realizar rituales improvisados con las entidades, lo que lo convierte en un factor de caos impredecible.",
+  "D-11562": "La Ex-Ingeniera. Posee una formación en ingeniería que la hace sorprendentemente útil. Es capaz de señalar fallos en el cableado, debilidades estructurales o ineficiencias en los procedimientos experimentales, a menudo para gran molestia de los investigadores que ignoran sus observaciones no solicitadas pero precisas."
 };
 
 
@@ -45,9 +48,9 @@ const generateDClass = (start: number, count: number): string[] => {
 }
 
 // Generate a roster of 50 D-Class personnel. 
-// D-11424 is special and defined in NOTABLE_PERSONNEL.
+// Notable D-Class are defined separately and excluded from this general roster.
 export const D_CLASS_ROSTER: string[] = [
-    ...generateDClass(11201, 49)
+    ...generateDClass(11201, 49) 
 ];
 
 // A combined list for easier initialization in the Personnel Tracker

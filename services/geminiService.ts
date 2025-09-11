@@ -1,6 +1,6 @@
-import { GoogleGenAI, Type, type Chat } from "@google/genai";
+import { GoogleGenAI, Type, type Chat, type Content } from "@google/genai";
 import { SYSTEM_INSTRUCTION, ADVANCE_TIME_PROMPT } from '../constants';
-import type { CameraEvent, GeminiResponse } from '../types';
+import type { CameraEvent, CommsMessage, GeminiResponse } from '../types';
 import type { MapArea } from "../data/mapData";
 
 if (!process.env.API_KEY) {
@@ -14,7 +14,7 @@ const responseSchema = {
   properties: {
     events: {
       type: Type.ARRAY,
-      description: "A list of 2 to 5 new surveillance events.",
+      description: "A list of 2 to 4 new surveillance events.",
       items: {
         type: Type.OBJECT,
         properties: {
@@ -52,14 +52,30 @@ const responseSchema = {
         required: ["camera", "timestamp", "message", "priority", "personnel", "anomalies"],
       },
     },
+    messages: {
+        type: Type.ARRAY,
+        description: "Optional. A list of 0 to 2 new messages sent from personnel to the Supervisor.",
+        items: {
+            type: Type.OBJECT,
+            properties: {
+                id: { type: Type.STRING, description: "A unique random string ID for the message." },
+                sender: { type: Type.STRING, description: "The name of the personnel sending the message." },
+                recipient: { type: Type.STRING, description: "Should always be 'Supervisor'."},
+                timestamp: { type: Type.STRING, description: "The timestamp of the message, e.g., '23:17:05'." },
+                message: { type: Type.STRING, description: "The content of the message in Spanish." },
+            },
+            required: ["id", "sender", "recipient", "timestamp", "message"],
+        }
+    }
   },
   required: ["events"],
 };
 
 
-export const initializeChat = (): Chat => {
+export const initializeChat = (history?: Content[]): Chat => {
   return ai.chats.create({
     model: 'gemini-2.5-flash',
+    history: history,
     config: {
       systemInstruction: SYSTEM_INSTRUCTION,
       responseMimeType: 'application/json',
@@ -69,7 +85,7 @@ export const initializeChat = (): Chat => {
   });
 };
 
-export const getNextEvents = async (chat: Chat, userAction?: string | null): Promise<CameraEvent[]> => {
+export const getNextEvents = async (chat: Chat, userAction?: string | null): Promise<{ events: CameraEvent[], messages: CommsMessage[] }> => {
   try {
     const prompt = userAction 
       ? `USER ACTION: ${userAction}\n${ADVANCE_TIME_PROMPT}`
@@ -95,7 +111,10 @@ export const getNextEvents = async (chat: Chat, userAction?: string | null): Pro
       throw new Error("Received malformed data from IRIS.");
     }
     
-    return parsed.events;
+    // Also parse messages, defaulting to an empty array if not present
+    const messages = (parsed.messages && Array.isArray(parsed.messages)) ? parsed.messages : [];
+
+    return { events: parsed.events, messages };
   } catch (error) {
     console.error("Error fetching or parsing next events:", error);
     if (error instanceof SyntaxError) {

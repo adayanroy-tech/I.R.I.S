@@ -273,19 +273,19 @@ export const PersonnelTracker: React.FC<{ events: CameraEvent[]; onClose: () => 
               </thead>
               <tbody>
                 {filteredPersonnel.map((p) => (
-                  <tr key={p.name} className="border-b border-green-900/50 hover:bg-green-900/20">
+                  <tr key={p.name} className={`border-b border-green-900/50 hover:bg-green-900/20 ${p.status === 'FALLECIDO' ? 'text-gray-500' : ''}`}>
                     <td className={`p-2 align-top ${p.isNotable ? 'text-cyan-300 font-bold' : 'text-green-300'}`}>
-                      <button onClick={() => handlePersonnelClick(p)} className="hover:underline text-left w-full">
+                      <button onClick={() => handlePersonnelClick(p)} className="hover:underline text-left w-full disabled:no-underline disabled:cursor-default" disabled={p.status === 'FALLECIDO'}>
                           {p.name}
                       </button>
-                      {p.type === 'D-CLASS' && <span className='text-orange-400 text-sm block'>(Clase-D)</span>}
-                      {p.isNotable && !p.name.startsWith('D-') && <span className='text-cyan-400 text-sm block'>(Personal con Dossier)</span>}
+                      {p.type === 'D-CLASS' && <span className='text-orange-400/80 text-sm block'>(Clase-D)</span>}
+                      {p.isNotable && !p.name.startsWith('D-') && <span className='text-cyan-400/80 text-sm block'>(Personal con Dossier)</span>}
                     </td>
-                    <td className={`p-2 align-top font-bold ${p.statusColor}`}>
+                    <td className={`p-2 align-top font-bold ${p.status === 'FALLECIDO' ? 'text-gray-500' : p.statusColor}`}>
                       {p.status}
                     </td>
-                    <td className="p-2 align-top text-yellow-400">{p.lastLocation}</td>
-                    <td className="p-2 align-top text-green-300">
+                    <td className="p-2 align-top text-yellow-400/80">{p.lastLocation}</td>
+                    <td className="p-2 align-top">
                       <span className="text-gray-400 mr-2">[{p.lastTimestamp}]</span>
                       {p.lastMessage}
                     </td>
